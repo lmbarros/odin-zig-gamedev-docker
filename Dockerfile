@@ -89,3 +89,14 @@ zig ar rcs libbox2d.a *.obj
 cp libbox2d.a /deps/x86_64-windows/lib
 rm -rf /tmp/box2d-3.0.0
 EOF
+
+# Hack: define _fltused
+RUN <<EOF
+mkdir /tmp/fltused
+cd /tmp/fltused
+echo "int _fltused = 1;" > fltused.c
+zig cc -c -O3 -target x86_64-windows-gnu -march=nehalem fltused.c
+zig ar rcs libfltused.a fltused.obj
+cp libfltused.a /deps/x86_64-windows/lib
+rm -rf /tmp/fltused
+EOF

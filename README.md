@@ -13,3 +13,9 @@ Includes:
 * SDL_ttf
 * miniaudio
 * Box2D
+
+And also:
+
+* A hack to define the `_fltused` symbol, which (as far as I understand) should
+  be provided by the Windows C runtime, but for some reason the tools I use
+  don't do it. Not entirely sure this is a safe workaround.
