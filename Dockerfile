@@ -8,7 +8,7 @@ FROM ubuntu:noble-20250127
 # Environment setup
 RUN <<EOF
 apt-get update
-apt-get install -y curl unzip xz-utils make
+apt-get install -y curl git make unzip xz-utils zip
 EOF
 
 # Install Odin
