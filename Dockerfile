@@ -11,6 +11,9 @@ apt-get update
 apt-get install -y curl git make unzip xz-utils zip
 EOF
 
+# Please bind-mount this one!
+WORKDIR /game
+
 # Install Odin
 RUN <<EOF
 cd /opt
