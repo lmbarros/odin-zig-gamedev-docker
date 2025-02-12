@@ -79,6 +79,7 @@ curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.0/SDL2-
 cd SDL2-2.32.0
 CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -target x86_64-linux-gnu -march=nehalem" ./configure
 make
+strip -g build/.libs/*.so*
 cp -r build/.libs/*.so* /deps/x86_64-linux/lib
 make install
 rm -rf /tmp/SDL2-2.32.0
@@ -106,6 +107,7 @@ curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/S
 cd SDL2_ttf-2.24.0
 CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -target x86_64-linux-gnu -march=nehalem" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu -O3 -target x86_64-linux-gnu -march=nehalem" ./configure
 make
+strip -g .libs/*.so*
 cp -r .libs/*.so* /deps/x86_64-linux/lib
 rm -rf /tmp/SDL2_ttf-2.24.0
 EOF
@@ -132,6 +134,7 @@ curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.5/
 cd SDL2_image-2.8.5
 CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -target x86_64-linux-gnu -march=nehalem" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu -O3 -target x86_64-linux-gnu -march=nehalem" ./configure
 make
+strip -g .libs/*.so*
 cp -r .libs/*.so* /deps/x86_64-linux/lib
 rm -rf /tmp/SDL2_image-2.8.5
 EOF
@@ -162,6 +165,7 @@ echo "#define MINIAUDIO_IMPLEMENTATION\\n#include \"miniaudio.h\"" > miniaudio.c
 # Linux
 zig cc -c -O3 -target x86_64-linux-gnu -march=nehalem -fno-sanitize=undefined miniaudio.c
 zig ar rcs libminiaudio.a miniaudio.o
+strip -g miniaudio.o
 cp libminiaudio.a /deps/x86_64-linux/lib
 rm miniaudio.o
 
@@ -187,6 +191,7 @@ cd box2d-3.0.0/src
 for f in *.c; do
 	zig cc -c -O3 -target x86_64-linux-gnu -march=nehalem -I ../include -I ../extern/simde/ $f
 done
+strip -g *.o
 zig ar rcs libbox2d.a *.o
 cp libbox2d.a /deps/x86_64-linux/lib
 rm *.o
