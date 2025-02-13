@@ -8,7 +8,7 @@ FROM ubuntu:noble-20250127
 # Environment setup
 RUN <<EOF
 apt-get update
-apt-get install -y binutils cmake curl git make pkgconf unzip xz-utils zip
+apt-get install -y 7zip binutils cmake curl git make pkgconf unzip xz-utils zip
 EOF
 
 # Please bind-mount this one!
@@ -32,6 +32,14 @@ mv zig-linux* zig
 ln -s /opt/zig/zig /usr/bin
 EOF
 
+# Download macOS SDK files for use with Zig
+RUN <<EOF
+cd /opt/
+git clone https://github.com/mitchellh/zig-build-macos-sdk.git
+cd zig-build-macos-sdk
+git checkout a4ea24f105902111633c6ae9f888b676ac5e36df
+EOF
+
 # Build some of the Odin vendored libs. Apparently compilation of modules
 # importing those fail even when building with `mode:obj` if they binaries are
 # not found.
@@ -49,6 +57,8 @@ mkdir -p /deps/x86_64-linux/lib
 
 mkdir -p /deps/x86_64-windows/lib
 mkdir -p /deps/x86_64-windows/bin
+
+mkdir -p /deps/x86_64-macos-none/lib
 EOF
 
 
@@ -95,6 +105,15 @@ chmod 444 /deps/x86_64-windows/*/*
 rm -rf /tmp/SDL2-2.32.0/
 EOF
 
+# macOS
+RUN <<EOF
+curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.0/SDL2-2.32.0.dmg > /tmp/SDL2-2.32.0.dmg
+cd /tmp
+7z x SDL2-2.32.0.dmg
+cp SDL2/SDL2.framework/Versions/Current/SDL2 /deps/x86_64-macos-none/lib/SDL2.o
+rm -rf /tmp/SDL2-2.32.0.dmg /tmp/SDL2
+EOF
+
 
 #
 # SDL2_ttf
@@ -120,6 +139,15 @@ cp /tmp/SDL2_ttf-2.24.0/x86_64-w64-mingw32/lib/libSDL2_ttf.dll.a /deps/x86_64-wi
 cp /tmp/SDL2_ttf-2.24.0/x86_64-w64-mingw32/bin/SDL2_ttf.dll /deps/x86_64-windows/bin
 chmod 444 /deps/x86_64-windows/*/*
 rm -rf /tmp/SDL2_ttf-2.24.0
+EOF
+
+# macOS
+RUN <<EOF
+curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/SDL2_ttf-2.24.0.dmg > /tmp/SDL2_ttf-2.24.0.dmg
+cd /tmp
+7z x SDL2_ttf-2.24.0.dmg
+cp SDL2_ttf/SDL2_ttf.framework/Versions/Current/SDL2_ttf /deps/x86_64-macos-none/lib/SDL2_ttf.o
+rm -rf /tmp/SDL2_ttf-2.24.0.dmg /tmp/SDL2_ttf
 EOF
 
 
@@ -149,6 +177,15 @@ chmod 444 /deps/x86_64-windows/*/*
 rm -rf /tmp/SDL2_image-2.8.5
 EOF
 
+# macOS
+RUN <<EOF
+curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.5/SDL2_image-2.8.5.dmg > /tmp/SDL2_image-2.8.5.dmg
+cd /tmp
+7z x SDL2_image-2.8.5.dmg
+cp SDL2_image/SDL2_image.framework/Versions/Current/SDL2_image /deps/x86_64-macos-none/lib/SDL2_image.o
+rm -rf /tmp/SDL2_image-2.8.5.dmg /tmp/SDL2_image
+EOF
+
 
 #
 # miniaudio
@@ -166,13 +203,19 @@ echo "#define MINIAUDIO_IMPLEMENTATION\\n#include \"miniaudio.h\"" > miniaudio.c
 zig cc -c -O3 -target x86_64-linux-gnu -march=nehalem -fno-sanitize=undefined miniaudio.c
 zig ar rcs libminiaudio.a miniaudio.o
 strip -g miniaudio.o
-cp libminiaudio.a /deps/x86_64-linux/lib
+mv libminiaudio.a /deps/x86_64-linux/lib
 rm miniaudio.o
 
 # Windows
 zig cc -c -O3 -target x86_64-windows-gnu -march=nehalem -fno-sanitize=undefined miniaudio.c
 zig ar rcs libminiaudio.a miniaudio.obj
-cp libminiaudio.a /deps/x86_64-windows/lib
+mv libminiaudio.a /deps/x86_64-windows/lib
+rm miniaudio.obj
+
+# macOS
+zig cc -c -O3 -target x86_64-macos-none -fno-sanitize=undefined -iframework /opt/zig-build-macos-sdk/Frameworks miniaudio.c
+mkdir /deps/x86_64-macos-none/lib/miniaudio
+mv miniaudio.o /deps/x86_64-macos-none/lib/miniaudio
 
 rm -rf /tmp/miniaudio-0.11.21
 EOF
@@ -193,7 +236,7 @@ for f in *.c; do
 done
 strip -g *.o
 zig ar rcs libbox2d.a *.o
-cp libbox2d.a /deps/x86_64-linux/lib
+mv libbox2d.a /deps/x86_64-linux/lib
 rm *.o
 
 # Windows
@@ -201,7 +244,16 @@ for f in *.c; do
 	zig cc -c -O3 -target x86_64-windows-gnu -march=nehalem -I ../include -I ../extern/simde/ $f
 done
 zig ar rcs libbox2d.a *.obj
-cp libbox2d.a /deps/x86_64-windows/lib
+mv libbox2d.a /deps/x86_64-windows/lib
+rm *.obj
+
+# macOS
+for f in *.c; do
+	zig cc -c -O3 -target x86_64-macos-none -I ../include -I ../extern/simde/ $f
+done
+mkdir /deps/x86_64-macos-none/lib/box2d
+mv *.o /deps/x86_64-macos-none/lib/box2d
+
 rm -rf /tmp/box2d-3.0.0
 EOF
 
@@ -216,6 +268,6 @@ cd /tmp/fltused
 echo "int _fltused = 1;" > fltused.c
 zig cc -c -O3 -target x86_64-windows-gnu -march=nehalem fltused.c
 zig ar rcs libfltused.a fltused.obj
-cp libfltused.a /deps/x86_64-windows/lib
+mv libfltused.a /deps/x86_64-windows/lib
 rm -rf /tmp/fltused
 EOF

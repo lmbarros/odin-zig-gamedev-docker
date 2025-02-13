@@ -22,6 +22,6 @@ And also:
 
 ## TODO
 
-* Mac dependencies
-* Organize the `Dockerfile`, it's quite messy now, lots of duplication, etc.
+* Organize the `Dockerfile`, it's quite messy now, lots of duplication, not
+  great dir names, etc.
 * Two-stage build, for leaner image
