@@ -9,6 +9,11 @@ FROM ubuntu:noble-20250127
 RUN <<EOF
 apt-get update
 apt-get install -y 7zip binutils clang cmake curl git make pkgconf unzip xz-utils zip
+
+# We install SDL and friends, too. Even though we'll not use these for the
+# packaged releases, having those in standard locations make it simpler to
+# run simple builds.
+apt-get install -y libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev
 EOF
 
 # Please bind-mount this one!
