@@ -8,7 +8,7 @@ FROM ubuntu:noble-20250127
 # Environment setup
 RUN <<EOF
 apt-get update
-apt-get install -y 7zip binutils cmake curl git make pkgconf unzip xz-utils zip
+apt-get install -y 7zip binutils clang cmake curl git make pkgconf unzip xz-utils zip
 EOF
 
 # Please bind-mount this one!
