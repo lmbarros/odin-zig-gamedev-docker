@@ -22,7 +22,7 @@ WORKDIR /game
 # Install Odin
 RUN <<EOF
 cd /opt
-curl -L https://github.com/odin-lang/Odin/releases/download/dev-2025-01/odin-ubuntu-amd64-dev-2025-01.zip > /tmp/odin.zip
+curl -L https://github.com/odin-lang/Odin/releases/download/dev-2025-03/odin-ubuntu-amd64-dev-2025-03.zip > /tmp/odin.zip
 unzip -p /tmp/odin.zip | tar xvz
 rm /tmp/odin.zip
 mv odin-linux-amd64* odin
