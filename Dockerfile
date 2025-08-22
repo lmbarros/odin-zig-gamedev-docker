@@ -22,9 +22,9 @@ WORKDIR /game
 # Install Odin
 RUN <<EOF
 cd /opt
-curl -L https://github.com/odin-lang/Odin/releases/download/dev-2025-07/odin-linux-amd64-dev-2025-07.tar.gz > /tmp/odin.tar.gz
-tar xvzf /tmp/odin.tar.gz
-rm /tmp/odin.tar.gz
+curl -L https://github.com/odin-lang/Odin/releases/download/dev-2025-08/odin-linux-amd64-dev-2025-08.zip > /tmp/odin.zip
+unzip -p /tmp/odin.zip | tar xvz
+rm /tmp/odin.zip
 mv odin-linux-amd64* odin
 ln -s /opt/odin/odin /usr/bin
 EOF
@@ -46,7 +46,7 @@ git checkout a4ea24f105902111633c6ae9f888b676ac5e36df
 EOF
 
 # Build some of the Odin vendored libs. Apparently compilation of modules
-# importing those fail even when building with `mode:obj` if they binaries are
+# importing those fail even when building with `mode:obj` if the binaries are
 # not found.
 RUN <<EOF
 cd /opt/odin/vendor/box2d/
@@ -232,8 +232,8 @@ EOF
 
 RUN <<EOF
 cd /tmp
-curl -L https://github.com/erincatto/box2d/archive/refs/tags/v3.1.1.tar.gz | tar xvz
-cd box2d-3.1.1/src
+curl -L https://github.com/erincatto/box2d/archive/refs/tags/v3.1.0.tar.gz | tar xvz
+cd box2d-3.1.0/src
 
 # Linux
 for f in *.c; do
