@@ -22,9 +22,9 @@ WORKDIR /game
 # Install Odin
 RUN <<EOF
 cd /opt
-curl -L https://github.com/odin-lang/Odin/releases/download/dev-2025-03/odin-ubuntu-amd64-dev-2025-03.zip > /tmp/odin.zip
-unzip -p /tmp/odin.zip | tar xvz
-rm /tmp/odin.zip
+curl -L https://github.com/odin-lang/Odin/releases/download/dev-2025-07/odin-linux-amd64-dev-2025-07.tar.gz > /tmp/odin.tar.gz
+tar xvzf /tmp/odin.tar.gz
+rm /tmp/odin.tar.gz
 mv odin-linux-amd64* odin
 ln -s /opt/odin/odin /usr/bin
 EOF
@@ -32,8 +32,8 @@ EOF
 # Install Zig
 RUN <<EOF
 cd /opt
-curl -L https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz | tar xvJ
-mv zig-linux* zig
+curl -L https://ziglang.org/download/0.14.1/zig-x86_64-linux-0.14.1.tar.xz | tar xvJ
+mv zig-x86_64-linux* zig
 ln -s /opt/zig/zig /usr/bin
 EOF
 
@@ -90,33 +90,33 @@ RUN apt-get install -y libgbm-dev
 # Linux
 RUN <<EOF
 cd /tmp
-curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.0/SDL2-2.32.0.tar.gz | tar xvz
-cd SDL2-2.32.0
+curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.8/SDL2-2.32.8.tar.gz | tar xvz
+cd SDL2-2.32.8
 CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -target x86_64-linux-gnu -march=nehalem" ./configure
 make
 strip -g build/.libs/*.so*
 cp -r build/.libs/*.so* /deps/x86_64-linux/lib
 make install
-rm -rf /tmp/SDL2-2.32.0
+rm -rf /tmp/SDL2-2.32.8
 EOF
 
 # Windows
 RUN <<EOF
 cd /tmp
-curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.0/SDL2-devel-2.32.0-mingw.tar.gz | tar xvz
-cp /tmp/SDL2-2.32.0/x86_64-w64-mingw32/lib/libSDL2.dll.a /deps/x86_64-windows/lib
-cp /tmp/SDL2-2.32.0/x86_64-w64-mingw32/bin/SDL2.dll /deps/x86_64-windows/bin
+curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.8/SDL2-devel-2.32.8-mingw.tar.gz | tar xvz
+cp /tmp/SDL2-2.32.8/x86_64-w64-mingw32/lib/libSDL2.dll.a /deps/x86_64-windows/lib
+cp /tmp/SDL2-2.32.8/x86_64-w64-mingw32/bin/SDL2.dll /deps/x86_64-windows/bin
 chmod 444 /deps/x86_64-windows/*/*
-rm -rf /tmp/SDL2-2.32.0/
+rm -rf /tmp/SDL2-2.32.8/
 EOF
 
 # macOS
 RUN <<EOF
-curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.0/SDL2-2.32.0.dmg > /tmp/SDL2-2.32.0.dmg
+curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.8/SDL2-2.32.8.dmg > /tmp/SDL2-2.32.8.dmg
 cd /tmp
-7z x SDL2-2.32.0.dmg
+7z x SDL2-2.32.8.dmg
 cp SDL2/SDL2.framework/Versions/Current/SDL2 /deps/x86_64-macos-none/lib/SDL2.o
-rm -rf /tmp/SDL2-2.32.0.dmg /tmp/SDL2
+rm -rf /tmp/SDL2-2.32.8.dmg /tmp/SDL2
 EOF
 
 
@@ -175,20 +175,20 @@ EOF
 # Windows
 RUN <<EOF
 cd /tmp
-curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.5/SDL2_image-devel-2.8.5-mingw.tar.gz | tar xvz
-cp /tmp/SDL2_image-2.8.5/x86_64-w64-mingw32/lib/libSDL2_image.dll.a /deps/x86_64-windows/lib
-cp /tmp/SDL2_image-2.8.5/x86_64-w64-mingw32/bin/SDL2_image.dll /deps/x86_64-windows/bin
+curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.8/SDL2_image-devel-2.8.8-mingw.tar.gz | tar xvz
+cp /tmp/SDL2_image-2.8.8/x86_64-w64-mingw32/lib/libSDL2_image.dll.a /deps/x86_64-windows/lib
+cp /tmp/SDL2_image-2.8.8/x86_64-w64-mingw32/bin/SDL2_image.dll /deps/x86_64-windows/bin
 chmod 444 /deps/x86_64-windows/*/*
-rm -rf /tmp/SDL2_image-2.8.5
+rm -rf /tmp/SDL2_image-2.8.8
 EOF
 
 # macOS
 RUN <<EOF
-curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.5/SDL2_image-2.8.5.dmg > /tmp/SDL2_image-2.8.5.dmg
+curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.8/SDL2_image-2.8.8.dmg > /tmp/SDL2_image-2.8.8.dmg
 cd /tmp
-7z x SDL2_image-2.8.5.dmg
+7z x SDL2_image-2.8.8.dmg
 cp SDL2_image/SDL2_image.framework/Versions/Current/SDL2_image /deps/x86_64-macos-none/lib/SDL2_image.o
-rm -rf /tmp/SDL2_image-2.8.5.dmg /tmp/SDL2_image
+rm -rf /tmp/SDL2_image-2.8.8.dmg /tmp/SDL2_image
 EOF
 
 
@@ -232,8 +232,8 @@ EOF
 
 RUN <<EOF
 cd /tmp
-curl -L https://github.com/erincatto/box2d/archive/refs/tags/v3.0.0.tar.gz | tar xvz
-cd box2d-3.0.0/src
+curl -L https://github.com/erincatto/box2d/archive/refs/tags/v3.1.1.tar.gz | tar xvz
+cd box2d-3.1.1/src
 
 # Linux
 for f in *.c; do
