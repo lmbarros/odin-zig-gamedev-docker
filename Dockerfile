@@ -200,8 +200,8 @@ RUN <<EOF
 set -e
 
 cd /tmp
-curl -L https://github.com/mackron/miniaudio/archive/refs/tags/0.11.21.tar.gz | tar xvz
-cd miniaudio-0.11.21
+curl -L https://github.com/mackron/miniaudio/archive/refs/tags/0.11.22.tar.gz | tar xvz
+cd miniaudio-0.11.22
 echo "#define MINIAUDIO_IMPLEMENTATION\\n#include \"miniaudio.h\"" > miniaudio.c
 
 # Linux
@@ -222,7 +222,7 @@ zig cc -c -O3 -target x86_64-macos-none -fno-sanitize=undefined -iframework /opt
 mkdir /deps/x86_64-macos-none/lib/miniaudio
 mv miniaudio.o /deps/x86_64-macos-none/lib/miniaudio
 
-rm -rf /tmp/miniaudio-0.11.21
+rm -rf /tmp/miniaudio-0.11.22
 EOF
 
 
@@ -259,7 +259,7 @@ done
 mkdir /deps/x86_64-macos-none/lib/box2d
 mv *.o /deps/x86_64-macos-none/lib/box2d
 
-rm -rf /tmp/box2d-3.0.0
+rm -rf /tmp/box2d-3.1.0
 EOF
 
 
