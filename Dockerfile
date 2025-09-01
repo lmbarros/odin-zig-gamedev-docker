@@ -2,8 +2,19 @@
 # odin-zig-gamedev-docker
 #
 
-# 24.04 LTS Noble Numbat
-FROM ubuntu:noble-20250127
+# 22.04 LTS Jammy Jellyfish
+#
+# Using the previous Ubuntu LTS (24.04 Noble Numbat is already out) because I
+# want to have the binaries depending on the older glibc version (specifically,
+# glibc 2.35, released on 2022-02-03). Too many people are still on systems
+# using older glibc versions, so we better be compatible with those!
+#
+# Worth noting:
+#
+# * With 24.04 Noble Numbat I used to have `-target x86_64-linux-gnu` in
+#   `CFLAGS` when building SDL. Doesn't seem to play well with 22.04 LTS Jammy
+#   Jellyfish. Shouldn't be necessary, as we are not cross-compiling.
+FROM ubuntu:jammy-20250730
 
 # Environment setup
 RUN <<EOF
@@ -14,6 +25,13 @@ apt-get install -y 7zip binutils clang cmake curl git make pkgconf unzip xz-util
 # packaged releases, having those in standard locations make it simpler to
 # run simple builds.
 apt-get install -y libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev
+EOF
+
+# The Ubuntu Jammy image doesn't include a non-root user, so we create one
+# mimicking what we have for more recent releases.
+RUN << EOF
+groupadd ubuntu
+useradd -ms /bin/bash -g ubuntu ubuntu
 EOF
 
 # Please bind-mount this one!
@@ -74,7 +92,7 @@ EOF
 # Optional dependencies for nicer SDL builds under Linux.
 RUN apt-get install -y libgl-dev
 RUN apt-get install -y libx11-dev libxext-dev
-RUN apt-get install -y wayland-utils libwayland-dev libegl-dev libxkbcommon-dev
+RUN apt-get install -y libwayland-dev libegl-dev libxkbcommon-dev
 RUN apt-get install -y libasound-dev
 RUN apt-get install -y libpulse-dev
 RUN apt-get install -y libpipewire-0.3-dev
@@ -92,7 +110,7 @@ RUN <<EOF
 cd /tmp
 curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.8/SDL2-2.32.8.tar.gz | tar xvz
 cd SDL2-2.32.8
-CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -target x86_64-linux-gnu -march=nehalem" ./configure
+CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" ./configure
 make
 strip -g build/.libs/*.so*
 cp -r build/.libs/*.so* /deps/x86_64-linux/lib
@@ -129,7 +147,7 @@ RUN <<EOF
 cd /tmp
 curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/SDL2_ttf-2.24.0.tar.gz | tar xvz
 cd SDL2_ttf-2.24.0
-CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -target x86_64-linux-gnu -march=nehalem" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu -O3 -target x86_64-linux-gnu -march=nehalem" ./configure
+CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" ./configure
 make
 strip -g .libs/*.so*
 cp -r .libs/*.so* /deps/x86_64-linux/lib
@@ -165,7 +183,7 @@ RUN <<EOF
 cd /tmp
 curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.5/SDL2_image-2.8.5.tar.gz | tar xvz
 cd SDL2_image-2.8.5
-CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -target x86_64-linux-gnu -march=nehalem" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu -O3 -target x86_64-linux-gnu -march=nehalem" ./configure
+CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" ./configure
 make
 strip -g .libs/*.so*
 cp -r .libs/*.so* /deps/x86_64-linux/lib
