@@ -16,6 +16,8 @@
 #   Jellyfish. Shouldn't be necessary, as we are not cross-compiling.
 FROM ubuntu:jammy-20250730
 
+ARG ODIN_VERSION=dev-2025-09
+
 # Environment setup
 RUN <<EOF
 apt-get update
@@ -29,7 +31,7 @@ EOF
 
 # The Ubuntu Jammy image doesn't include a non-root user, so we create one
 # mimicking what we have for more recent releases.
-RUN << EOF
+RUN <<EOF
 groupadd ubuntu
 useradd -ms /bin/bash -g ubuntu ubuntu
 EOF
@@ -40,7 +42,7 @@ WORKDIR /game
 # Install Odin
 RUN <<EOF
 cd /opt
-curl -L https://github.com/odin-lang/Odin/releases/download/dev-2025-08/odin-linux-amd64-dev-2025-08.zip > /tmp/odin.zip
+curl -L https://github.com/odin-lang/Odin/releases/download/${ODIN_VERSION}/odin-linux-amd64-${ODIN_VERSION}.zip > /tmp/odin.zip
 unzip -p /tmp/odin.zip | tar xvz
 rm /tmp/odin.zip
 mv odin-linux-amd64* odin
@@ -63,15 +65,32 @@ cd zig-build-macos-sdk
 git checkout a4ea24f105902111633c6ae9f888b676ac5e36df
 EOF
 
-# Build some of the Odin vendored libs. Apparently compilation of modules
-# importing those fail even when building with `mode:obj` if the binaries are
-# not found.
+# Build some of the Odin vendored libs for Linux. Apparently compilation of
+# modules importing those fail even when building with `mode:obj` if the
+# binaries are not found.
 RUN <<EOF
 cd /opt/odin/vendor/box2d/
 CC="zig cc" CXX="zig c++" ./build_box2d.sh
 
 cd /opt/odin/vendor/miniaudio/src
 CC="zig cc" make
+EOF
+
+# Since Odin 2025-09, the Windows binaries for vendor libraries are no longer
+# included in the Linux package. So, we download the Windows package and get
+# these binaries from there. (We need these, otherwise the Windows builds will
+# fail even when building with `mode:obj` -- as noted above for Linux).
+RUN <<EOF
+mkdir /tmp/win/
+
+curl -L https://github.com/odin-lang/Odin/releases/download/${ODIN_VERSION}/odin-windows-amd64-${ODIN_VERSION}.zip > /tmp/win/odin_windows.zip
+cd /tmp/win
+unzip odin_windows.zip
+
+cp vendor/box2d/lib/*.lib /opt/odin/vendor/box2d/lib/
+cp vendor/miniaudio/lib/*.lib /opt/odin/vendor/miniaudio/lib/
+
+rm -rf /tmp/win
 EOF
 
 # Dependencies paths
@@ -132,7 +151,7 @@ EOF
 RUN <<EOF
 curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.8/SDL2-2.32.8.dmg > /tmp/SDL2-2.32.8.dmg
 cd /tmp
-7z x SDL2-2.32.8.dmg
+7zz x SDL2-2.32.8.dmg
 cp SDL2/SDL2.framework/Versions/Current/SDL2 /deps/x86_64-macos-none/lib/SDL2.o
 rm -rf /tmp/SDL2-2.32.8.dmg /tmp/SDL2
 EOF
@@ -168,7 +187,7 @@ EOF
 RUN <<EOF
 curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/SDL2_ttf-2.24.0.dmg > /tmp/SDL2_ttf-2.24.0.dmg
 cd /tmp
-7z x SDL2_ttf-2.24.0.dmg
+7zz x SDL2_ttf-2.24.0.dmg
 cp SDL2_ttf/SDL2_ttf.framework/Versions/Current/SDL2_ttf /deps/x86_64-macos-none/lib/SDL2_ttf.o
 rm -rf /tmp/SDL2_ttf-2.24.0.dmg /tmp/SDL2_ttf
 EOF
@@ -204,7 +223,7 @@ EOF
 RUN <<EOF
 curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.8/SDL2_image-2.8.8.dmg > /tmp/SDL2_image-2.8.8.dmg
 cd /tmp
-7z x SDL2_image-2.8.8.dmg
+7zz x SDL2_image-2.8.8.dmg
 cp SDL2_image/SDL2_image.framework/Versions/Current/SDL2_image /deps/x86_64-macos-none/lib/SDL2_image.o
 rm -rf /tmp/SDL2_image-2.8.8.dmg /tmp/SDL2_image
 EOF
