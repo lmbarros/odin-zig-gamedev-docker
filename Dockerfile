@@ -16,7 +16,15 @@
 #   Jellyfish. Shouldn't be necessary, as we are not cross-compiling.
 FROM ubuntu:jammy-20250730
 
+# Versions and stuff.
 ARG ODIN_VERSION=dev-2025-09
+ARG ZIG_VERSION=0.14.1
+ARG ZIG_MACOS_SDK_VERSION=a4ea24f105902111633c6ae9f888b676ac5e36df
+ARG SDL_VERSION=2.32.8
+ARG SDL_TTF_VERSION=2.24.0
+ARG SDL_IMAGE_VERSION=2.8.8
+ARG MINIAUDIO_VERSION=0.11.22
+ARG BOX2D_VERSION=3.1.0
 
 # Environment setup
 RUN <<EOF
@@ -52,7 +60,7 @@ EOF
 # Install Zig
 RUN <<EOF
 cd /opt
-curl -L https://ziglang.org/download/0.14.1/zig-x86_64-linux-0.14.1.tar.xz | tar xvJ
+curl -L https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz | tar xvJ
 mv zig-x86_64-linux* zig
 ln -s /opt/zig/zig /usr/bin
 EOF
@@ -62,7 +70,7 @@ RUN <<EOF
 cd /opt/
 git clone https://github.com/mitchellh/zig-build-macos-sdk.git
 cd zig-build-macos-sdk
-git checkout a4ea24f105902111633c6ae9f888b676ac5e36df
+git checkout ${ZIG_MACOS_SDK_VERSION}
 EOF
 
 # Build some of the Odin vendored libs for Linux. Apparently compilation of
@@ -127,33 +135,33 @@ RUN apt-get install -y libgbm-dev
 # Linux
 RUN <<EOF
 cd /tmp
-curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.8/SDL2-2.32.8.tar.gz | tar xvz
-cd SDL2-2.32.8
+curl -L https://github.com/libsdl-org/SDL/releases/download/release-${SDL_VERSION}/SDL2-${SDL_VERSION}.tar.gz | tar xvz
+cd SDL2-${SDL_VERSION}
 CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" ./configure
 make
 strip -g build/.libs/*.so*
 cp -r build/.libs/*.so* /deps/x86_64-linux/lib
 make install
-rm -rf /tmp/SDL2-2.32.8
+rm -rf /tmp/SDL2-${SDL_VERSION}
 EOF
 
 # Windows
 RUN <<EOF
 cd /tmp
-curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.8/SDL2-devel-2.32.8-mingw.tar.gz | tar xvz
-cp /tmp/SDL2-2.32.8/x86_64-w64-mingw32/lib/libSDL2.dll.a /deps/x86_64-windows/lib
-cp /tmp/SDL2-2.32.8/x86_64-w64-mingw32/bin/SDL2.dll /deps/x86_64-windows/bin
+curl -L https://github.com/libsdl-org/SDL/releases/download/release-${SDL_VERSION}/SDL2-devel-${SDL_VERSION}-mingw.tar.gz | tar xvz
+cp /tmp/SDL2-${SDL_VERSION}/x86_64-w64-mingw32/lib/libSDL2.dll.a /deps/x86_64-windows/lib
+cp /tmp/SDL2-${SDL_VERSION}/x86_64-w64-mingw32/bin/SDL2.dll /deps/x86_64-windows/bin
 chmod 444 /deps/x86_64-windows/*/*
-rm -rf /tmp/SDL2-2.32.8/
+rm -rf /tmp/SDL2-${SDL_VERSION}/
 EOF
 
 # macOS
 RUN <<EOF
-curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.8/SDL2-2.32.8.dmg > /tmp/SDL2-2.32.8.dmg
+curl -L https://github.com/libsdl-org/SDL/releases/download/release-${SDL_VERSION}/SDL2-${SDL_VERSION}.dmg > /tmp/SDL2-${SDL_VERSION}.dmg
 cd /tmp
-7zz x SDL2-2.32.8.dmg
+7zz x SDL2-${SDL_VERSION}.dmg
 cp SDL2/SDL2.framework/Versions/Current/SDL2 /deps/x86_64-macos-none/lib/SDL2.o
-rm -rf /tmp/SDL2-2.32.8.dmg /tmp/SDL2
+rm -rf /tmp/SDL2-${SDL_VERSION}.dmg /tmp/SDL2
 EOF
 
 
@@ -164,32 +172,32 @@ EOF
 # Linux
 RUN <<EOF
 cd /tmp
-curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/SDL2_ttf-2.24.0.tar.gz | tar xvz
-cd SDL2_ttf-2.24.0
+curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-${SDL_TTF_VERSION}/SDL2_ttf-${SDL_TTF_VERSION}.tar.gz | tar xvz
+cd SDL2_ttf-${SDL_TTF_VERSION}
 CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" ./configure
 make
 strip -g .libs/*.so*
 cp -r .libs/*.so* /deps/x86_64-linux/lib
-rm -rf /tmp/SDL2_ttf-2.24.0
+rm -rf /tmp/SDL2_ttf-${SDL_TTF_VERSION}
 EOF
 
 # Windows
 RUN <<EOF
 cd /tmp
-curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/SDL2_ttf-devel-2.24.0-mingw.tar.gz | tar xvz
-cp /tmp/SDL2_ttf-2.24.0/x86_64-w64-mingw32/lib/libSDL2_ttf.dll.a /deps/x86_64-windows/lib
-cp /tmp/SDL2_ttf-2.24.0/x86_64-w64-mingw32/bin/SDL2_ttf.dll /deps/x86_64-windows/bin
+curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-${SDL_TTF_VERSION}/SDL2_ttf-devel-${SDL_TTF_VERSION}-mingw.tar.gz | tar xvz
+cp /tmp/SDL2_ttf-${SDL_TTF_VERSION}/x86_64-w64-mingw32/lib/libSDL2_ttf.dll.a /deps/x86_64-windows/lib
+cp /tmp/SDL2_ttf-${SDL_TTF_VERSION}/x86_64-w64-mingw32/bin/SDL2_ttf.dll /deps/x86_64-windows/bin
 chmod 444 /deps/x86_64-windows/*/*
-rm -rf /tmp/SDL2_ttf-2.24.0
+rm -rf /tmp/SDL2_ttf-${SDL_TTF_VERSION}
 EOF
 
 # macOS
 RUN <<EOF
-curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/SDL2_ttf-2.24.0.dmg > /tmp/SDL2_ttf-2.24.0.dmg
+curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-${SDL_TTF_VERSION}/SDL2_ttf-${SDL_TTF_VERSION}.dmg > /tmp/SDL2_ttf-${SDL_TTF_VERSION}.dmg
 cd /tmp
-7zz x SDL2_ttf-2.24.0.dmg
+7zz x SDL2_ttf-${SDL_TTF_VERSION}.dmg
 cp SDL2_ttf/SDL2_ttf.framework/Versions/Current/SDL2_ttf /deps/x86_64-macos-none/lib/SDL2_ttf.o
-rm -rf /tmp/SDL2_ttf-2.24.0.dmg /tmp/SDL2_ttf
+rm -rf /tmp/SDL2_ttf-${SDL_TTF_VERSION}.dmg /tmp/SDL2_ttf
 EOF
 
 
@@ -200,32 +208,32 @@ EOF
 # Linux
 RUN <<EOF
 cd /tmp
-curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.5/SDL2_image-2.8.5.tar.gz | tar xvz
-cd SDL2_image-2.8.5
+curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-${SDL_IMAGE_VERSION}/SDL2_image-${SDL_IMAGE_VERSION}.tar.gz | tar xvz
+cd SDL2_image-${SDL_IMAGE_VERSION}
 CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" ./configure
 make
 strip -g .libs/*.so*
 cp -r .libs/*.so* /deps/x86_64-linux/lib
-rm -rf /tmp/SDL2_image-2.8.5
+rm -rf /tmp/SDL2_image-${SDL_IMAGE_VERSION}
 EOF
 
 # Windows
 RUN <<EOF
 cd /tmp
-curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.8/SDL2_image-devel-2.8.8-mingw.tar.gz | tar xvz
-cp /tmp/SDL2_image-2.8.8/x86_64-w64-mingw32/lib/libSDL2_image.dll.a /deps/x86_64-windows/lib
-cp /tmp/SDL2_image-2.8.8/x86_64-w64-mingw32/bin/SDL2_image.dll /deps/x86_64-windows/bin
+curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-${SDL_IMAGE_VERSION}/SDL2_image-devel-${SDL_IMAGE_VERSION}-mingw.tar.gz | tar xvz
+cp /tmp/SDL2_image-${SDL_IMAGE_VERSION}/x86_64-w64-mingw32/lib/libSDL2_image.dll.a /deps/x86_64-windows/lib
+cp /tmp/SDL2_image-${SDL_IMAGE_VERSION}/x86_64-w64-mingw32/bin/SDL2_image.dll /deps/x86_64-windows/bin
 chmod 444 /deps/x86_64-windows/*/*
-rm -rf /tmp/SDL2_image-2.8.8
+rm -rf /tmp/SDL2_image-${SDL_IMAGE_VERSION}
 EOF
 
 # macOS
 RUN <<EOF
-curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.8/SDL2_image-2.8.8.dmg > /tmp/SDL2_image-2.8.8.dmg
+curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-${SDL_IMAGE_VERSION}/SDL2_image-${SDL_IMAGE_VERSION}.dmg > /tmp/SDL2_image-${SDL_IMAGE_VERSION}.dmg
 cd /tmp
-7zz x SDL2_image-2.8.8.dmg
+7zz x SDL2_image-${SDL_IMAGE_VERSION}.dmg
 cp SDL2_image/SDL2_image.framework/Versions/Current/SDL2_image /deps/x86_64-macos-none/lib/SDL2_image.o
-rm -rf /tmp/SDL2_image-2.8.8.dmg /tmp/SDL2_image
+rm -rf /tmp/SDL2_image-${SDL_IMAGE_VERSION}.dmg /tmp/SDL2_image
 EOF
 
 
@@ -237,8 +245,8 @@ RUN <<EOF
 set -e
 
 cd /tmp
-curl -L https://github.com/mackron/miniaudio/archive/refs/tags/0.11.22.tar.gz | tar xvz
-cd miniaudio-0.11.22
+curl -L https://github.com/mackron/miniaudio/archive/refs/tags/${MINIAUDIO_VERSION}.tar.gz | tar xvz
+cd miniaudio-${MINIAUDIO_VERSION}
 echo "#define MINIAUDIO_IMPLEMENTATION\\n#include \"miniaudio.h\"" > miniaudio.c
 
 # Linux
@@ -259,7 +267,7 @@ zig cc -c -O3 -target x86_64-macos-none -fno-sanitize=undefined -iframework /opt
 mkdir /deps/x86_64-macos-none/lib/miniaudio
 mv miniaudio.o /deps/x86_64-macos-none/lib/miniaudio
 
-rm -rf /tmp/miniaudio-0.11.22
+rm -rf /tmp/miniaudio-${MINIAUDIO_VERSION}
 EOF
 
 
@@ -269,8 +277,8 @@ EOF
 
 RUN <<EOF
 cd /tmp
-curl -L https://github.com/erincatto/box2d/archive/refs/tags/v3.1.0.tar.gz | tar xvz
-cd box2d-3.1.0/src
+curl -L https://github.com/erincatto/box2d/archive/refs/tags/v${BOX2D_VERSION}.tar.gz | tar xvz
+cd box2d-${BOX2D_VERSION}/src
 
 # Linux
 for f in *.c; do
@@ -296,7 +304,7 @@ done
 mkdir /deps/x86_64-macos-none/lib/box2d
 mv *.o /deps/x86_64-macos-none/lib/box2d
 
-rm -rf /tmp/box2d-3.1.0
+rm -rf /tmp/box2d-${BOX2D_VERSION}
 EOF
 
 
