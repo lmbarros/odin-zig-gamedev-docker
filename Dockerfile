@@ -26,6 +26,9 @@ ARG SDL_IMAGE_VERSION=2.8.8
 ARG MINIAUDIO_VERSION=0.11.22
 ARG BOX2D_VERSION=3.1.0
 
+ARG OPT_FLAGS_PC=-O3 -march=nehalem
+ARG OPT_FLAGS_MAC=-O3
+
 # Environment setup
 RUN <<EOF
 apt-get update
@@ -137,7 +140,7 @@ RUN <<EOF
 cd /tmp
 curl -L https://github.com/libsdl-org/SDL/releases/download/release-${SDL_VERSION}/SDL2-${SDL_VERSION}.tar.gz | tar xvz
 cd SDL2-${SDL_VERSION}
-CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" ./configure
+CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu ${OPT_FLAGS_PC}" ./configure
 make
 strip -g build/.libs/*.so*
 cp -r build/.libs/*.so* /deps/x86_64-linux/lib
@@ -174,7 +177,7 @@ RUN <<EOF
 cd /tmp
 curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-${SDL_TTF_VERSION}/SDL2_ttf-${SDL_TTF_VERSION}.tar.gz | tar xvz
 cd SDL2_ttf-${SDL_TTF_VERSION}
-CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" ./configure
+CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu ${OPT_FLAGS_PC}" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu ${OPT_FLAGS_PC}" ./configure
 make
 strip -g .libs/*.so*
 cp -r .libs/*.so* /deps/x86_64-linux/lib
@@ -210,7 +213,7 @@ RUN <<EOF
 cd /tmp
 curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-${SDL_IMAGE_VERSION}/SDL2_image-${SDL_IMAGE_VERSION}.tar.gz | tar xvz
 cd SDL2_image-${SDL_IMAGE_VERSION}
-CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu -O3 -march=nehalem" ./configure
+CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu ${OPT_FLAGS_PC}" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu ${OPT_FLAGS_PC}" ./configure
 make
 strip -g .libs/*.so*
 cp -r .libs/*.so* /deps/x86_64-linux/lib
@@ -250,20 +253,20 @@ cd miniaudio-${MINIAUDIO_VERSION}
 echo "#define MINIAUDIO_IMPLEMENTATION\\n#include \"miniaudio.h\"" > miniaudio.c
 
 # Linux
-zig cc -c -O3 -target x86_64-linux-gnu -march=nehalem -fno-sanitize=undefined miniaudio.c
+zig cc -c -target x86_64-linux-gnu ${OPT_FLAGS_PC} -fno-sanitize=undefined miniaudio.c
 zig ar rcs libminiaudio.a miniaudio.o
 strip -g miniaudio.o
 mv libminiaudio.a /deps/x86_64-linux/lib
 rm miniaudio.o
 
 # Windows
-zig cc -c -O3 -target x86_64-windows-gnu -march=nehalem -fno-sanitize=undefined miniaudio.c
+zig cc -c -target x86_64-windows-gnu ${OPT_FLAGS_PC} -fno-sanitize=undefined miniaudio.c
 zig ar rcs libminiaudio.a miniaudio.obj
 mv libminiaudio.a /deps/x86_64-windows/lib
 rm miniaudio.obj
 
 # macOS
-zig cc -c -O3 -target x86_64-macos-none -fno-sanitize=undefined -iframework /opt/zig-build-macos-sdk/Frameworks miniaudio.c
+zig cc -c -target x86_64-macos-none ${OPT_FLAGS_MAC} -fno-sanitize=undefined -iframework /opt/zig-build-macos-sdk/Frameworks miniaudio.c
 mkdir /deps/x86_64-macos-none/lib/miniaudio
 mv miniaudio.o /deps/x86_64-macos-none/lib/miniaudio
 
@@ -282,7 +285,7 @@ cd box2d-${BOX2D_VERSION}/src
 
 # Linux
 for f in *.c; do
-	zig cc -c -O3 -target x86_64-linux-gnu -march=nehalem -I ../include -I ../extern/simde/ $f
+	zig cc -c -target x86_64-linux-gnu ${OPT_FLAGS_PC} -I ../include -I ../extern/simde/ $f
 done
 strip -g *.o
 zig ar rcs libbox2d.a *.o
@@ -291,7 +294,7 @@ rm *.o
 
 # Windows
 for f in *.c; do
-	zig cc -c -O3 -target x86_64-windows-gnu -march=nehalem -I ../include -I ../extern/simde/ $f
+	zig cc -c -target x86_64-windows-gnu ${OPT_FLAGS_PC} -I ../include -I ../extern/simde/ $f
 done
 zig ar rcs libbox2d.a *.obj
 mv libbox2d.a /deps/x86_64-windows/lib
@@ -299,7 +302,7 @@ rm *.obj
 
 # macOS
 for f in *.c; do
-	zig cc -c -O3 -target x86_64-macos-none -I ../include -I ../extern/simde/ $f
+	zig cc -c -target x86_64-macos-none ${OPT_FLAGS_MAC} -I ../include -I ../extern/simde/ $f
 done
 mkdir /deps/x86_64-macos-none/lib/box2d
 mv *.o /deps/x86_64-macos-none/lib/box2d
@@ -316,7 +319,7 @@ RUN <<EOF
 mkdir /tmp/fltused
 cd /tmp/fltused
 echo "int _fltused = 1;" > fltused.c
-zig cc -c -O3 -target x86_64-windows-gnu -march=nehalem fltused.c
+zig cc -c -target x86_64-windows-gnu ${OPT_FLAGS_PC} fltused.c
 zig ar rcs libfltused.a fltused.obj
 mv libfltused.a /deps/x86_64-windows/lib
 rm -rf /tmp/fltused
