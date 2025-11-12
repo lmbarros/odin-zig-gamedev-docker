@@ -345,5 +345,5 @@ ln -s /opt/zig/zig /usr/bin
 
 # Install stuff we'll need when using the image.
 apt-get update
-apt-get install -y git make zip
+apt-get install -y clang git make zip
 EOF
