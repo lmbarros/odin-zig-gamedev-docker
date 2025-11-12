@@ -2,6 +2,10 @@
 # odin-zig-gamedev-docker
 #
 
+# ------------------------------------------------------------------------------
+#  Build stage
+# ------------------------------------------------------------------------------
+
 # 22.04 LTS Jammy Jellyfish
 #
 # Using the previous Ubuntu LTS (24.04 Noble Numbat is already out) because I
@@ -14,7 +18,7 @@
 # * With 24.04 Noble Numbat I used to have `-target x86_64-linux-gnu` in
 #   `CFLAGS` when building SDL. Doesn't seem to play well with 22.04 LTS Jammy
 #   Jellyfish. Shouldn't be necessary, as we are not cross-compiling.
-FROM ubuntu:jammy-20250730
+FROM ubuntu:jammy-20250730 AS build
 
 # Versions and stuff.
 ARG ODIN_VERSION=dev-2025-09
@@ -39,16 +43,6 @@ apt-get install -y 7zip binutils clang cmake curl git make pkgconf unzip xz-util
 # run simple builds.
 apt-get install -y libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev
 EOF
-
-# The Ubuntu Jammy image doesn't include a non-root user, so we create one
-# mimicking what we have for more recent releases.
-RUN <<EOF
-groupadd ubuntu
-useradd -ms /bin/bash -g ubuntu ubuntu
-EOF
-
-# Please bind-mount this one!
-WORKDIR /game
 
 # Install Odin
 RUN <<EOF
@@ -323,4 +317,33 @@ zig cc -c -target x86_64-windows-gnu ${OPT_FLAGS_PC} fltused.c
 zig ar rcs libfltused.a fltused.obj
 mv libfltused.a /deps/x86_64-windows/lib
 rm -rf /tmp/fltused
+EOF
+
+
+# ------------------------------------------------------------------------------
+#  Final stage
+# ------------------------------------------------------------------------------
+
+FROM ubuntu:jammy-20250730
+
+# Please bind-mount your project root dir to /game when using the image.
+WORKDIR /game
+
+# Copy stuff we built on the previous stage.
+COPY --from=build /deps /deps
+COPY --from=build /opt /opt
+
+RUN <<EOF
+# The Ubuntu Jammy image doesn't include a non-root user, so we create one
+# mimicking what we have for more recent releases.
+groupadd ubuntu
+useradd -ms /bin/bash -g ubuntu ubuntu
+
+# Make our shiny new compilers are usable.
+ln -s /opt/odin/odin /usr/bin
+ln -s /opt/zig/zig /usr/bin
+
+# Install stuff we'll need when using the image.
+apt-get update
+apt-get install -y git make zip
 EOF
