@@ -18,17 +18,24 @@
 # * With 24.04 Noble Numbat I used to have `-target x86_64-linux-gnu` in
 #   `CFLAGS` when building SDL. Doesn't seem to play well with 22.04 LTS Jammy
 #   Jellyfish. Shouldn't be necessary, as we are not cross-compiling.
+# * Update from above: Looks like newer versions of Zig are more strict on how
+#   compilation targets are handled. When using `-target x86_64-linux-gnu`, I
+#   believe Zig now can *only* use the libraries it provides for the requested
+#   platform -- and this excludes Wayland stuff. So, when building SDL we must
+#   either disable Wayland support, or use the `native` target, which will use
+#   the host's libraries (well, the container's libraries in this case). Using
+#   the `native` target at least for now.
 FROM ubuntu:jammy-20250730 AS build
 
 # Versions and stuff.
-ARG ODIN_VERSION=dev-2025-09
-ARG ZIG_VERSION=0.14.1
+ARG ODIN_VERSION=dev-2026-03
+ARG ZIG_VERSION=0.16.0
 ARG ZIG_MACOS_SDK_VERSION=a4ea24f105902111633c6ae9f888b676ac5e36df
-ARG SDL_VERSION=2.32.8
+ARG SDL_VERSION=2.32.10
 ARG SDL_TTF_VERSION=2.24.0
-ARG SDL_IMAGE_VERSION=2.8.8
-ARG MINIAUDIO_VERSION=0.11.22
-ARG BOX2D_VERSION=3.1.0
+ARG SDL_IMAGE_VERSION=2.8.10
+ARG MINIAUDIO_VERSION=0.11.24
+ARG BOX2D_VERSION=3.1.1
 
 ARG OPT_FLAGS_PC=-O3 -march=nehalem
 ARG OPT_FLAGS_MAC=-O3
@@ -47,9 +54,9 @@ EOF
 # Install Odin
 RUN <<EOF
 cd /opt
-curl -L https://github.com/odin-lang/Odin/releases/download/${ODIN_VERSION}/odin-linux-amd64-${ODIN_VERSION}.zip > /tmp/odin.zip
-unzip -p /tmp/odin.zip | tar xvz
-rm /tmp/odin.zip
+curl -L https://github.com/odin-lang/Odin/releases/download/${ODIN_VERSION}/odin-linux-amd64-${ODIN_VERSION}.tar.gz > /tmp/odin.tar.gz
+tar xvzf /tmp/odin.tar.gz
+rm /tmp/odin.tar.gz
 mv odin-linux-amd64* odin
 ln -s /opt/odin/odin /usr/bin
 EOF
@@ -92,8 +99,8 @@ curl -L https://github.com/odin-lang/Odin/releases/download/${ODIN_VERSION}/odin
 cd /tmp/win
 unzip odin_windows.zip
 
-cp vendor/box2d/lib/*.lib /opt/odin/vendor/box2d/lib/
-cp vendor/miniaudio/lib/*.lib /opt/odin/vendor/miniaudio/lib/
+cp dist/vendor/box2d/lib/*.lib /opt/odin/vendor/box2d/lib/
+cp dist/vendor/miniaudio/lib/*.lib /opt/odin/vendor/miniaudio/lib/
 
 rm -rf /tmp/win
 EOF
@@ -134,11 +141,10 @@ RUN <<EOF
 cd /tmp
 curl -L https://github.com/libsdl-org/SDL/releases/download/release-${SDL_VERSION}/SDL2-${SDL_VERSION}.tar.gz | tar xvz
 cd SDL2-${SDL_VERSION}
-CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu ${OPT_FLAGS_PC}" ./configure
+CC="zig cc" CFLAGS="-target native ${OPT_FLAGS_PC}" ./configure
 make
 strip -g build/.libs/*.so*
 cp -r build/.libs/*.so* /deps/x86_64-linux/lib
-make install
 rm -rf /tmp/SDL2-${SDL_VERSION}
 EOF
 
@@ -171,7 +177,7 @@ RUN <<EOF
 cd /tmp
 curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-${SDL_TTF_VERSION}/SDL2_ttf-${SDL_TTF_VERSION}.tar.gz | tar xvz
 cd SDL2_ttf-${SDL_TTF_VERSION}
-CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu ${OPT_FLAGS_PC}" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu ${OPT_FLAGS_PC}" ./configure
+CC="zig cc" CFLAGS="-target native ${OPT_FLAGS_PC}" CXX="zig c++" CXXFLAGS="-target native -I/opt/zig/lib/libcxx/include ${OPT_FLAGS_PC}" ./configure
 make
 strip -g .libs/*.so*
 cp -r .libs/*.so* /deps/x86_64-linux/lib
@@ -207,7 +213,7 @@ RUN <<EOF
 cd /tmp
 curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-${SDL_IMAGE_VERSION}/SDL2_image-${SDL_IMAGE_VERSION}.tar.gz | tar xvz
 cd SDL2_image-${SDL_IMAGE_VERSION}
-CC="zig cc" CFLAGS="-I/usr/include -L/lib/x86_64-linux-gnu ${OPT_FLAGS_PC}" CXX="zig c++" CXXFLAGS="-I/opt/zig/lib/libcxx/include -L/lib/x86_64-linux-gnu ${OPT_FLAGS_PC}" ./configure
+CC="zig cc" CFLAGS="-target native ${OPT_FLAGS_PC}" CXX="zig c++" CXXFLAGS="-target native -I/opt/zig/lib/libcxx/include ${OPT_FLAGS_PC}" ./configure
 make
 strip -g .libs/*.so*
 cp -r .libs/*.so* /deps/x86_64-linux/lib
@@ -247,7 +253,7 @@ cd miniaudio-${MINIAUDIO_VERSION}
 echo "#define MINIAUDIO_IMPLEMENTATION\\n#include \"miniaudio.h\"" > miniaudio.c
 
 # Linux
-zig cc -c -target x86_64-linux-gnu ${OPT_FLAGS_PC} -fno-sanitize=undefined miniaudio.c
+zig cc -c -target native ${OPT_FLAGS_PC} -fno-sanitize=undefined miniaudio.c
 zig ar rcs libminiaudio.a miniaudio.o
 strip -g miniaudio.o
 mv libminiaudio.a /deps/x86_64-linux/lib
@@ -279,7 +285,7 @@ cd box2d-${BOX2D_VERSION}/src
 
 # Linux
 for f in *.c; do
-	zig cc -c -target x86_64-linux-gnu ${OPT_FLAGS_PC} -I ../include -I ../extern/simde/ $f
+	zig cc -c -target native ${OPT_FLAGS_PC} -I ../include -I ../extern/simde/ $f
 done
 strip -g *.o
 zig ar rcs libbox2d.a *.o
