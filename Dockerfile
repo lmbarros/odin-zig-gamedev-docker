@@ -28,12 +28,12 @@
 FROM ubuntu:jammy-20250730 AS build
 
 # Versions and stuff.
-ARG ODIN_VERSION=dev-2026-03
-ARG ZIG_VERSION=0.16.0
+ARG ODIN_VERSION=dev-2026-10
+ARG ZIG_VERSION=0.17.1
 ARG ZIG_MACOS_SDK_VERSION=a4ea24f105902111633c6ae9f888b676ac5e36df
 ARG SDL_VERSION=2.32.10
 ARG SDL_TTF_VERSION=2.24.0
-ARG SDL_IMAGE_VERSION=2.8.10
+ARG SDL_IMAGE_VERSION=2.8.12
 ARG MINIAUDIO_VERSION=0.11.24
 ARG BOX2D_VERSION=3.1.1
 
@@ -85,7 +85,7 @@ cd /opt/odin/vendor/box2d/
 CC="zig cc" CXX="zig c++" ./build_box2d.sh
 
 cd /opt/odin/vendor/miniaudio/src
-CC="zig cc" make
+CC="zig cc" ./build_miniaudio.sh
 EOF
 
 # Since Odin 2025-09, the Windows binaries for vendor libraries are no longer
